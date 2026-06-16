@@ -20,6 +20,8 @@ const DOM = {
     cacheInfo: document.getElementById('cacheInfo'),
     searchInput: document.getElementById('searchInput'),
     categoryFilters: document.getElementById('categoryFilters'),
+    themeToggle: document.getElementById('themeToggle'),
+    exportCsvBtn: document.getElementById('exportCsvBtn'),
     
     // Stats
     totalCount: document.getElementById('totalCount'),
@@ -50,6 +52,7 @@ DOM.progressCircle.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     fetchReleaseNotes();
     setupEventListeners();
 });
@@ -111,6 +114,16 @@ function setupEventListeners() {
     
     // Post Tweet Button
     DOM.postTweetBtn.addEventListener('click', postTweetToTwitter);
+
+    // Export CSV Button
+    if (DOM.exportCsvBtn) {
+        DOM.exportCsvBtn.addEventListener('click', exportToCSV);
+    }
+
+    // Theme Toggle Switch
+    if (DOM.themeToggle) {
+        DOM.themeToggle.addEventListener('change', handleThemeChange);
+    }
 }
 
 // Fetch Release Notes from Backend API
@@ -246,6 +259,13 @@ function renderFeed() {
                     <span class="type-badge">${update.type}</span>
                 </div>
                 <div class="card-actions">
+                    <button class="btn-copy-card" title="Copy this update to clipboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>Copy</span>
+                    </button>
                     <button class="btn-tweet-share" title="Compose a tweet for this release note">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -259,6 +279,19 @@ function renderFeed() {
             </div>
         `;
         
+        // Copy card content action
+        const copyBtn = card.querySelector('.btn-copy-card');
+        copyBtn.addEventListener('click', async () => {
+            const copyText = `[BigQuery - ${update.date}] ${update.type}: ${update.plain_text}`;
+            try {
+                await navigator.clipboard.writeText(copyText);
+                showToast('Update copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy card text:', err);
+                showToast('Failed to copy to clipboard!');
+            }
+        });
+
         // Tweet button event inside the card
         const tweetBtn = card.querySelector('.btn-tweet-share');
         tweetBtn.addEventListener('click', () => openTweetModal(update));
@@ -474,5 +507,71 @@ function showEmpty(show) {
         DOM.emptyState.classList.remove('hidden');
     } else {
         DOM.emptyState.classList.add('hidden');
+    }
+}
+
+// Export filtered release notes list to CSV
+function exportToCSV() {
+    if (state.filteredUpdates.length === 0) {
+        showToast('No updates to export!');
+        return;
+    }
+    
+    let csvContent = "ID,Date,Type,Description\r\n";
+    
+    state.filteredUpdates.forEach(item => {
+        const idVal = `"${item.id.replace(/"/g, '""')}"`;
+        const dateVal = `"${item.date.replace(/"/g, '""')}"`;
+        const typeVal = `"${item.type.replace(/"/g, '""')}"`;
+        
+        const cleanText = item.plain_text.replace(/\r?\n|\r/g, " ");
+        const descVal = `"${cleanText.replace(/"/g, '""')}"`;
+        
+        csvContent += `${idVal},${dateVal},${typeVal},${descVal}\r\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const filterName = state.currentCategory !== 'all' ? `_${state.currentCategory}` : '';
+    link.setAttribute("download", `bigquery_release_notes${filterName}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Exported CSV successfully!');
+}
+
+// Initialize light/dark theme toggle state
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    
+    if (savedTheme === 'light' || (!savedTheme && systemPrefersLight)) {
+        document.body.classList.add('light-theme');
+        if (DOM.themeToggle) {
+            DOM.themeToggle.checked = true;
+        }
+    } else {
+        document.body.classList.remove('light-theme');
+        if (DOM.themeToggle) {
+            DOM.themeToggle.checked = false;
+        }
+    }
+}
+
+// Handle theme toggle switch toggling
+function handleThemeChange(e) {
+    if (e.target.checked) {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
     }
 }
