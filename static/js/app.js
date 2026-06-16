@@ -22,6 +22,7 @@ const DOM = {
     categoryFilters: document.getElementById('categoryFilters'),
     themeToggle: document.getElementById('themeToggle'),
     exportCsvBtn: document.getElementById('exportCsvBtn'),
+    scrollTopBtn: document.getElementById('scrollTopBtn'),
     
     // Stats
     totalCount: document.getElementById('totalCount'),
@@ -123,6 +124,25 @@ function setupEventListeners() {
     // Theme Toggle Switch
     if (DOM.themeToggle) {
         DOM.themeToggle.addEventListener('change', handleThemeChange);
+    }
+
+    // Scroll to top scroll listener
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            DOM.scrollTopBtn.classList.remove('hidden');
+        } else {
+            DOM.scrollTopBtn.classList.add('hidden');
+        }
+    });
+
+    // Scroll to top click listener
+    if (DOM.scrollTopBtn) {
+        DOM.scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
     }
 }
 
