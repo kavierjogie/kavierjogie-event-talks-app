@@ -1044,3 +1044,45 @@ body.light-theme .btn-scroll-top {
     box-shadow: var(--shadow-lg), 0 0 15px rgba(99, 102, 241, 0.15);
     border-color: transparent;
 }
+
+/* Daily Group and Sticky Headers */
+.daily-group {
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.daily-header {
+    position: sticky;
+    top: -1px;
+    z-index: 15;
+    background-color: var(--bg-main);
+    padding: 14px 0 10px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s;
+}
+
+.daily-header h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #a5b4fc 0%, #d8b4fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.light-theme .daily-header h2 {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.daily-updates {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}

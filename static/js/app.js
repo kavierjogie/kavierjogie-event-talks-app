@@ -254,7 +254,7 @@ function applyFilters() {
     renderFeed();
 }
 
-// Render the updates card stream
+// Render the updates card stream grouped by date
 function renderFeed() {
     DOM.feedGrid.innerHTML = '';
     
@@ -267,56 +267,83 @@ function renderFeed() {
     showEmpty(false);
     DOM.feedGrid.classList.remove('hidden');
     
+    // Group updates by date
+    const groups = {};
+    const orderedDates = [];
+    
     state.filteredUpdates.forEach(update => {
-        const card = document.createElement('article');
-        card.className = 'release-card';
-        card.dataset.type = update.type;
+        if (!groups[update.date]) {
+            groups[update.date] = [];
+            orderedDates.push(update.date);
+        }
+        groups[update.date].push(update);
+    });
+    
+    orderedDates.forEach(date => {
+        const groupSection = document.createElement('section');
+        groupSection.className = 'daily-group';
         
-        card.innerHTML = `
-            <div class="card-header">
-                <div class="meta-group">
-                    <span class="date-badge">${update.date}</span>
-                    <span class="type-badge">${update.type}</span>
-                </div>
-                <div class="card-actions">
-                    <button class="btn-copy-card" title="Copy this update to clipboard">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                        <span>Copy</span>
-                    </button>
-                    <button class="btn-tweet-share" title="Compose a tweet for this release note">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        <span>Tweet</span>
-                    </button>
-                </div>
-            </div>
-            <div class="card-content">
-                ${update.content_html}
-            </div>
-        `;
+        const groupHeader = document.createElement('header');
+        groupHeader.className = 'daily-header';
+        groupHeader.innerHTML = `<h2>${date}</h2>`;
+        groupSection.appendChild(groupHeader);
         
-        // Copy card content action
-        const copyBtn = card.querySelector('.btn-copy-card');
-        copyBtn.addEventListener('click', async () => {
-            const copyText = `[BigQuery - ${update.date}] ${update.type}: ${update.plain_text}`;
-            try {
-                await navigator.clipboard.writeText(copyText);
-                showToast('Update copied to clipboard!');
-            } catch (err) {
-                console.error('Failed to copy card text:', err);
-                showToast('Failed to copy to clipboard!');
-            }
-        });
+        const groupUpdatesContainer = document.createElement('div');
+        groupUpdatesContainer.className = 'daily-updates';
+        
+        groups[date].forEach(update => {
+            const card = document.createElement('article');
+            card.className = 'release-card';
+            card.dataset.type = update.type;
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="meta-group">
+                        <span class="type-badge">${update.type}</span>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-copy-card" title="Copy this update to clipboard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                        <button class="btn-tweet-share" title="Compose a tweet for this release note">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span>Tweet</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    ${update.content_html}
+                </div>
+            `;
+            
+            // Copy card content action
+            const copyBtn = card.querySelector('.btn-copy-card');
+            copyBtn.addEventListener('click', async () => {
+                const copyText = `[BigQuery - ${update.date}] ${update.type}: ${update.plain_text}`;
+                try {
+                    await navigator.clipboard.writeText(copyText);
+                    showToast('Update copied to clipboard!');
+                } catch (err) {
+                    console.error('Failed to copy card text:', err);
+                    showToast('Failed to copy to clipboard!');
+                }
+            });
 
-        // Tweet button event inside the card
-        const tweetBtn = card.querySelector('.btn-tweet-share');
-        tweetBtn.addEventListener('click', () => openTweetModal(update));
+            // Tweet button event inside the card
+            const tweetBtn = card.querySelector('.btn-tweet-share');
+            tweetBtn.addEventListener('click', () => openTweetModal(update));
+            
+            groupUpdatesContainer.appendChild(card);
+        });
         
-        DOM.feedGrid.appendChild(card);
+        groupSection.appendChild(groupUpdatesContainer);
+        DOM.feedGrid.appendChild(groupSection);
     });
 }
 
